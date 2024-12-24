@@ -1,93 +1,146 @@
-import {Component} from 'react'
+import {useState, useEffect} from 'react'
+
 import Header from '../Header'
-import Tablets from '../Tablets'
+import TabCard from '../TabCard'
+
 import './index.css'
 
-class Home extends Component {
-  state = {
-    tabList: [],
-    restaurantname: '',
-    cartCount: 0,
+const Home = () => {
+  const [isLoading, setIsLoading] = useState(true)
+  const [response, setResponse] = useState([])
+  const [activeCategoryId, setActiveCategoryId] = useState('')
+
+  const [cartItems, setCartItems] = useState([])
+
+  const addItemToCart = dish => {
+    const isAlreadyExists = cartItems.find(item => item.dishId === dish.dishId)
+    if (!isAlreadyExists) {
+      const newDish = {...dish, quantity: 1}
+      setCartItems(prev => [...prev, newDish])
+    } else {
+      setCartItems(prev =>
+        prev.map(item =>
+          item.dishId === dish.dishId
+            ? {...item, quantity: item.quantity + 1}
+            : item,
+        ),
+      )
+    }
   }
 
-  updatedCartCount = number => {
-    this.setState(prevCount => ({
-      cartCount: prevCount.cartCount + number,
+  const removeItemFromCart = dish => {
+    const isAlreadyExists = cartItems.find(item => item.dishId === dish.dishId)
+    if (isAlreadyExists) {
+      setCartItems(prev =>
+        prev
+          .map(item =>
+            item.dishId === dish.dishId
+              ? {...item, quantity: item.quantity - 1}
+              : item,
+          )
+          .filter(item => item.quantity > 0),
+      )
+    }
+  }
+
+  const getUpdatedData = tableMenuList =>
+    tableMenuList.map(eachMenu => ({
+      menuCategory: eachMenu.menu_category,
+      menuCategoryId: eachMenu.menu_category_id,
+      menuCategoryImage: eachMenu.menu_category_image,
+      categoryDishes: eachMenu.category_dishes.map(eachDish => ({
+        dishId: eachDish.dish_id,
+        dishName: eachDish.dish_name,
+        dishPrice: eachDish.dish_price,
+        dishImage: eachDish.dish_image,
+        dishCurrency: eachDish.dish_currency,
+        dishCalories: eachDish.dish_calories,
+        dishDescription: eachDish.dish_description,
+        dishAvailability: eachDish.dish_Availability,
+        dishType: eachDish.dish_Type,
+        addonCat: eachDish.addonCat,
+      })),
     }))
-  }
 
-  componentDidMount = () => {
-    this.getRecipes()
-  }
-
-  getRecipes = async () => {
-    const dishesApiUrl =
+  const fetchRestaurantApi = async () => {
+    const api =
       'https://apis2.ccbp.in/restaurant-app/restaurant-menu-list-details'
-    const options = {
-      method: 'GET',
-    }
-    const response = await fetch(dishesApiUrl, options)
-    try {
-      if (response.ok) {
-        const data = await response.json()
-        console.log(data)
-        if (Array.isArray(data) && data.length > 0) {
-          const restaurant = data[0]
-
-          const restaurantName = restaurant.restaurant_name
-          const tabsList = restaurant.table_menu_list.map(tab => ({
-            menuCategory: tab.menu_category,
-            menuCategoryId: tab.menu_category_id,
-            categoryList: tab.category_dishes.map(dish => ({
-              addOnCart:
-                Array.isArray(dish.addonCat) && dish.addonCat.length > 0,
-              addOnImage: dish.addonCat.map(add => ({
-                image: add.addons.dish_image,
-              })),
-              dishAvailability: dish.dish_Availability,
-              dishId: dish.dish_id,
-              dishName: dish.dish_name,
-              currency: dish.dish_currency,
-              dishPrice: dish.dish_price,
-              dishDescription: dish.dish_description,
-              dishImage: dish.dish_image,
-              dishCalories: dish.dish_calories,
-              nextUrl: dish.nexturl,
-            })),
-          }))
-
-          this.setState({
-            tabList: tabsList,
-            restaurantname: restaurantName,
-          })
-        }
-      } else {
-        console.error('Failed to fetch data')
-      }
-    } catch (error) {
-      console.error('Error fetching data', error)
-    }
+    const apiResponse = await fetch(api)
+    const data = await apiResponse.json()
+    const updatedData = getUpdatedData(data[0].table_menu_list)
+    setResponse(updatedData)
+    setActiveCategoryId(updatedData[0].menuCategoryId)
+    setIsLoading(false)
   }
 
-  renderSuccessView = () => {
-    const {tabList} = this.state
+  useEffect(() => {
+    fetchRestaurantApi()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const onUpdateActiveCategoryIdx = menuCategoryId =>
+    setActiveCategoryId(menuCategoryId)
+
+  const renderTabMenuList = () =>
+    response.map(eachCategory => {
+      const onClickHandler = () =>
+        onUpdateActiveCategoryIdx(eachCategory.menuCategoryId)
+
+      return (
+        <li
+          className={`each-tab-item ${
+            eachCategory.menuCategoryId === activeCategoryId
+              ? 'active-tab-item'
+              : ''
+          }`}
+          key={eachCategory.menuCategoryId}
+          onClick={onClickHandler}
+        >
+          <button
+            type="button"
+            className="mt-0 mb-0 ms-2 me-2 tab-category-button"
+          >
+            {eachCategory.menuCategory}
+          </button>
+        </li>
+      )
+    })
+
+  const renderDishes = () => {
+    const {categoryDishes} = response.find(
+      eachCategory => eachCategory.menuCategoryId === activeCategoryId,
+    )
 
     return (
-      <div className="success-view-container">
-        <Tablets tabList={tabList} updatedCartCount={this.updatedCartCount} />
-      </div>
+      <ul className="m-0 d-flex flex-column dishes-list-container">
+        {categoryDishes.map(eachDish => (
+          <TabCard
+            key={eachDish.dishId}
+            dishDetails={eachDish}
+            cartItems={cartItems}
+            addItemToCart={addItemToCart}
+            removeItemFromCart={removeItemFromCart}
+          />
+        ))}
+      </ul>
     )
   }
 
-  render() {
-    const {restaurantname, cartCount} = this.state
-    return (
-      <>
-        <Header restaurantname={restaurantname} cartCount={cartCount} />
-        {this.renderSuccessView()}
-      </>
-    )
-  }
+  const renderSpinner = () => (
+    <div className="spinner-container">
+      <div className="spinner-border" role="status" />
+    </div>
+  )
+
+  return isLoading ? (
+    renderSpinner()
+  ) : (
+    <div className="home-background">
+      <Header cartItems={cartItems} />
+      <ul className="m-0 ps-0 d-flex tab-container">{renderTabMenuList()}</ul>
+      {renderDishes()}
+    </div>
+  )
 }
 
 export default Home

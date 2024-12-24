@@ -1,101 +1,69 @@
-import {useState} from 'react'
 import './index.css'
 
-const TabCard = props => {
-  const {tabList, updatedCartCount} = props
-  const [count, setCount] = useState({})
+const TabCard = ({
+  dishDetails,
+  cartItems,
+  addItemToCart,
+  removeItemFromCart,
+}) => {
+  const {
+    dishId,
+    dishName,
+    dishType,
+    dishPrice,
+    dishCurrency,
+    dishDescription,
+    dishImage,
+    dishCalories,
+    addonCat,
+    dishAvailability,
+  } = dishDetails
 
-  const onIncrement = dishId => {
-    setCount(prevState => {
-      const newQuantity = {...prevState}
-      newQuantity[dishId] = (newQuantity[dishId] || 0) + 1
+  const onIncreaseQuantity = () => addItemToCart(dishDetails)
+  const onDecreaseQuantity = () => removeItemFromCart(dishDetails)
 
-      return newQuantity
-    })
-    updatedCartCount(1)
+  const getQuantity = () => {
+    const cartItem = cartItems.find(item => item.dishId === dishId)
+    return cartItem ? cartItem.quantity : 0
   }
 
-  const onDecrement = dishId => {
-    setCount(prevState => {
-      const newQuantity = {...prevState}
-      if (newQuantity[dishId] > 0) {
-        newQuantity[dishId] -= 1
-      }
-      return newQuantity
-    })
-    updatedCartCount(-1)
-  }
+  const renderControllerButton = () => (
+    <div className="controller-container d-flex align-items-center bg-success">
+      <button className="button" type="button" onClick={onDecreaseQuantity}>
+        -
+      </button>
+      <p className="quantity">{getQuantity()}</p>
+      <button className="button" type="button" onClick={onIncreaseQuantity}>
+        +
+      </button>
+    </div>
+  )
 
   return (
-    <div className="category-container">
-      {tabList.length > 0 ? (
-        tabList.map(tab => (
-          <div key={tab.menuCategoryId}>
-            <ul className="unordered-list">
-              {tab.categoryList.map(dish => (
-                <li className="list" key={dish.dishId}>
-                  <div>
-                    <img alt="symbol" src={dish.addOnImage.image} />
-                  </div>
-                  <div className="second-container">
-                    <h1>{dish.dishName}</h1>
-                    <div className="d-flex">
-                      <p>{dish.currency}</p>
-                      <p>{dish.dishPrice}</p>
-                    </div>
-                    <p>{dish.dishDescription}</p>
-                    {dish.dishAvailability ? (
-                      <>
-                        <div className="button-container">
-                          <button
-                            type="button"
-                            onClick={() => onDecrement(dish.dishId)}
-                            className="button"
-                          >
-                            -
-                          </button>
-                          <button type="button" className="button">
-                            {count[dish.dishId] || 0}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onIncrement(dish.dishId)}
-                            className="button"
-                          >
-                            +
-                          </button>
-                        </div>
-                        <div>
-                          {dish.addOnCart && (
-                            <p className="custom-text">
-                              Customizations available
-                            </p>
-                          )}
-                        </div>
-                      </>
-                    ) : (
-                      <p className="text-danger">Not available</p>
-                    )}
-                  </div>
-                  <div className="calories-container">
-                    <p>{dish.dishCalories} calories</p>
-                  </div>
-                  <div>
-                    <img
-                      alt={dish.dishName}
-                      className="image"
-                      src={dish.dishImage}
-                    />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))
-      ) : (
-        <div>None</div>
-      )}
-    </div>
+    <li className="mb-3 p-3 dish-item-container d-flex">
+      <div
+        className={`veg-border ${dishType === 1 ? 'non-veg-border' : ''} me-3`}
+      >
+        <div className={`veg-round ${dishType === 1 ? 'non-veg-round' : ''}`} />
+      </div>
+      <div className="dish-details-container">
+        <h1 className="dish-name">{dishName}</h1>
+        <p className="dish-currency-price">
+          {dishCurrency} {dishPrice}
+        </p>
+        <p className="dish-description">{dishDescription}</p>
+        {dishAvailability && renderControllerButton()}
+        {!dishAvailability && (
+          <p className="not-availability-text text-danger">Not available</p>
+        )}
+        {addonCat.length !== 0 && (
+          <p className="addon-availability-text">Customizations available</p>
+        )}
+      </div>
+
+      <p className="dish-calories text-warning">{dishCalories} calories</p>
+      <img className="dish-image" alt={dishName} src={dishImage} />
+    </li>
   )
 }
 

@@ -1,10 +1,6 @@
 import Home from './components/Home'
 import './App.css'
 
-const App = () => (
-  <div>
-    <Home />
-  </div>
-)
+const App = () => <Home />
 
 export default App
