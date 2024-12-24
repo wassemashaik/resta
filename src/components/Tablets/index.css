@@ -1,0 +1,16 @@
+.unordered-container {
+  display: flex;
+  flex-direction: column;
+  list-style-type: none;
+  flex-wrap: nowrap;
+}
+.list-item {
+  color: #000;
+  font-weight: 500;
+  text-decoration: none;
+}
+::after {
+  color: red;
+  text-decoration-color: red;
+  text-decoration: underline;
+}
